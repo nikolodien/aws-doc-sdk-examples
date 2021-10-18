@@ -2,14 +2,40 @@
 
 ## Purpose
 
-These examples demonstrate how to perform several DynamoDB operations using the alpha version of the AWS SDK for Rust.
-They all use the same schema, as defined in the __create-table__ example.
+These examples demonstrate how to perform several Amazon DynamoDB (DynamoDB) operations using the alpha version of the AWS SDK for Rust.
+Unless otherwise noted, these examples use the same schema, as defined in the **create-table** example.
 
-## Prerequisites
+DynamoDB is a fully managed NoSQL database service that provides fast and predictable performance with seamless scalability.
+
+## Code examples
+
+- [Add item](src/bin/add-item.rs) (PutItem)
+- [Create table](src/bin/create-table.rs) (CreateTable)
+- [Create, Read, Update, Delete (CRUD)](src/bin/CRUD.rs) (CreateTable, DeleteItem, DeleteTable, PutItem, Query)
+- [Delete item](src/bin/delete-item.rs) (DeleteItem)
+- [Delete table](src/bin/delete-table.rs) (DeleteTable)
+- [Hello world](src/bin/dynamodb-hellowrold.rs) (CreateTable, ListTables)
+- [List items](src/bin/list-items.rs) (Scan)
+- [List tables](src/bin/list-tables.rs) (ListTables)
+- [Movies](src/bin/movies.rs) (CreateTable, PutItem, Query)
+
+## ⚠ Important
+
+- We recommend that you grant this code least privilege,
+  or at most the minimum permissions required to perform the task.
+  For more information, see
+  [Grant Least Privilege](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege)
+  in the AWS Identity and Access Management User Guide.
+- This code has not been tested in all AWS Regions.
+  Some AWS services are available only in specific
+  [Regions](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services).
+- Running this code might result in charges to your AWS account.
+
+## Running the code examples
+
+### Prerequisites
 
 You must have an AWS account, and have configured your default credentials and AWS Region as described in [https://github.com/awslabs/aws-sdk-rust](https://github.com/awslabs/aws-sdk-rust).
-
-## Running the code
 
 ### add-item
 
@@ -116,16 +142,15 @@ Use __delete-table__ to delete __dynamo-movies-example__.
 
 `cargo run --bin movies`
 
-### Notes
+## Resources
 
-- We recommend that you grant this code least privilege,
-  or at most the minimum permissions required to perform the task.
-  For more information, see
-  [Grant Least Privilege](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege)
-  in the AWS Identity and Access Management User Guide.
-- This code has not been tested in all AWS Regions.
-  Some AWS services are available only in specific
-  [Regions](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services).
-- Running this code might result in charges to your AWS account.
+- [AWS SDK for Rust repo](https://github.com/awslabs/aws-sdk-rust)
+- [AWS SDK for Rust API Reference Guide](https://awslabs.github.io/aws-sdk-rust/aws_sdk_cognitoidentityprovider/index.html) 
+
+## Contributing
+
+To propose a new code example to the AWS documentation team, 
+see [CONTRIBUTING.md](https://github.com/awsdocs/aws-doc-sdk-examples/blob/master/CONTRIBUTING.md). 
+The team prefers to create code examples that show broad scenarios rather than individual API calls. 
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: Apache-2.0

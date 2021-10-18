@@ -51,6 +51,7 @@ fn random_string(n: usize) -> String {
 }
 
 /// Create a new table.
+// snippet-start:[dynamodb.rust.crud-make_table]
 async fn make_table(
     client: &Client,
     table: &str,
@@ -84,6 +85,7 @@ async fn make_table(
         Err(e) => Err(e),
     }
 }
+// snippet-end:[dynamodb.rust.crud-make_table]
 
 /// For add_item and query_item
 #[derive(Clone)]
@@ -98,6 +100,7 @@ struct Item {
 }
 
 /// Add an item to the table.
+// snippet-start:[dynamodb.rust.crud-add_item]
 async fn add_item(
     client: &Client,
     item: Item,
@@ -123,9 +126,11 @@ async fn add_item(
         Err(e) => Err(e),
     }
 }
+// snippet-end:[dynamodb.rust.crud-add_item]
 
 /// Query the table for an item matching the input values.
 /// Returns true if the item is found; otherwise false.
+// snippet-start:[dynamodb.rust.crud-query_item]
 async fn query_item(client: &Client, item: Item) -> bool {
     let value = &item.value;
     let key = &item.key;
@@ -158,6 +163,37 @@ async fn query_item(client: &Client, item: Item) -> bool {
         }
     }
 }
+// snippet-end:[dynamodb.rust.crud-query_item]
+
+// Deletes an item from the table.
+// snippet-start:[dynamodb.rust.crud-delete_item]
+async fn delete_item(client: &Client, table: &str, key: &str, value: &str) -> Result<(), Error> {
+    println!("Deleting item.");
+    let user_av = AttributeValue::S(value.into());
+    client
+        .delete_item()
+        .table_name(table)
+        .key(key, user_av)
+        .send()
+        .await?;
+
+    println!("Deleted item.");
+
+    Ok(())
+}
+// snippet-end:[dynamodb.rust.crud-delete_item]
+
+// Deletes a table.
+// snippet-start:[dynamodb.rust.crud-delete_table]
+async fn delete_table(client: &Client, table: &str) -> Result<(), Error> {
+    println!("Deleting table.");
+    client.delete_table().table_name(table).send().await?;
+    println!("Deleted table.");
+    println!();
+
+    Ok(())
+}
+// snippet-end:[dynamodb.rust.crud-delete_table]
 
 /// Hand-written waiter to retry every second until the table is out of `Creating` state
 #[derive(Clone)]
@@ -337,28 +373,14 @@ async fn main() -> Result<(), Error> {
     }
 
     /* Delete item */
-    println!("Deleting item.");
-    let user_av = AttributeValue::S(value);
-    client
-        .delete_item()
-        .table_name(&table)
-        .key(key, user_av)
-        .send()
-        .await?;
-
-    println!("Deleted item.");
+    delete_item(&client, &table, &key, &value).await.unwrap();
 
     if interactive {
         pause();
     }
 
     /* Delete table */
-    println!("Deleting table.");
-    client.delete_table().table_name(&table).send().await?;
-    println!("Deleted table.");
-    println!();
-
-    Ok(())
+    delete_table(&client, &table).await
 }
 
 /// Construct a `DescribeTable` request with a policy to retry every second until the table
