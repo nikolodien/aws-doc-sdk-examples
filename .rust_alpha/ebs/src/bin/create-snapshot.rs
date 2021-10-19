@@ -27,6 +27,75 @@ struct Opt {
     verbose: bool,
 }
 
+// Creates a snapshot.
+// snippet-start:[ebs.rust.create-snapshot-create_snapshot]
+async fn create_snapshot(client: &Client, description: &str) -> Result<String, Error> {
+    let snapshot = client
+        .start_snapshot()
+        .description(description)
+        .encrypted(false)
+        .volume_size(1)
+        .send()
+        .await?;
+
+    let snapshot_id = snapshot.snapshot_id.unwrap();
+
+    Ok(snapshot_id)
+}
+// snippet-end:[ebs.rust.create-snapshot-create_snapshot]
+
+// Puts data into a snapshot.
+// snippet-start:[ebs.rust.create-snapshot-put_data]
+async fn put_data(client: &Client, snapshot_id: &str) -> Result<(), Error> {
+    let mut blocks = vec![];
+
+    // Append a block of all 1s.
+    let mut block: Vec<u8> = Vec::new();
+    block.resize(EBS_BLOCK_SIZE, 1);
+    blocks.push(block);
+    // Append a block of all 0s.
+    let mut block: Vec<u8> = Vec::new();
+    block.resize(EBS_BLOCK_SIZE, 0);
+    blocks.push(block);
+    for (idx, block) in blocks.into_iter().enumerate() {
+        let mut hasher = sha2::Sha256::new();
+        hasher.update(&block);
+        let checksum = hasher.finalize();
+        let checksum = base64::encode(&checksum[..]);
+        client
+            .put_snapshot_block()
+            .snapshot_id(snapshot_id)
+            .block_index(idx as i32)
+            .block_data(ByteStream::from(block))
+            .checksum(checksum)
+            .checksum_algorithm(ChecksumAlgorithm::ChecksumAlgorithmSha256)
+            .data_length(EBS_BLOCK_SIZE as i32)
+            .send()
+            .await?;
+    }
+
+    Ok(())
+}
+// snippet-end:[ebs.rust.create-snapshot-put_data]
+
+// Completes a snapshot.
+// snippet-start:[ebs.rust.create-snapshot-finish_snapshot]
+async fn finish_snapshot(client: &Client, snapshot_id: &str) -> Result<(), Error> {
+    client
+        .complete_snapshot()
+        .changed_blocks_count(2)
+        .snapshot_id(snapshot_id)
+        .send()
+        .await?;
+
+    println!("Snapshot ID {}", snapshot_id);
+    println!("The state is 'completed' when all of the modified blocks have been transferred to Amazon S3.");
+    println!("Use the get-snapshot-state code example to get the state of the snapshot.");
+
+    Ok(())
+}
+// snippet-end:[ebs.rust.create-snapshot-finish_snapshot]
+
 /// Creates an Amazon Elastic Block Store snapshot using generated data.
 /// # Arguments
 ///
@@ -64,54 +133,9 @@ async fn main() -> Result<(), Error> {
     let shared_config = aws_config::from_env().region(region_provider).load().await;
     let client = Client::new(&shared_config);
 
-    let snapshot = client
-        .start_snapshot()
-        .description(description)
-        .encrypted(false)
-        .volume_size(1)
-        .send()
-        .await?;
+    let id = create_snapshot(&client, &description).await?;
 
-    let snapshot_id = snapshot.snapshot_id.unwrap();
-    let mut blocks = vec![];
+    put_data(&client, &id).await.unwrap();
 
-    // Append a block of all 1s.
-    let mut block: Vec<u8> = Vec::new();
-    block.resize(EBS_BLOCK_SIZE, 1);
-    blocks.push(block);
-
-    // Append a block of all 0s.
-    let mut block: Vec<u8> = Vec::new();
-    block.resize(EBS_BLOCK_SIZE, 0);
-    blocks.push(block);
-
-    for (idx, block) in blocks.into_iter().enumerate() {
-        let mut hasher = sha2::Sha256::new();
-        hasher.update(&block);
-        let checksum = hasher.finalize();
-        let checksum = base64::encode(&checksum[..]);
-
-        client
-            .put_snapshot_block()
-            .snapshot_id(&snapshot_id)
-            .block_index(idx as i32)
-            .block_data(ByteStream::from(block))
-            .checksum(checksum)
-            .checksum_algorithm(ChecksumAlgorithm::ChecksumAlgorithmSha256)
-            .data_length(EBS_BLOCK_SIZE as i32)
-            .send()
-            .await?;
-    }
-    client
-        .complete_snapshot()
-        .changed_blocks_count(2)
-        .snapshot_id(&snapshot_id)
-        .send()
-        .await?;
-
-    println!("Snapshot ID {}", snapshot_id);
-    println!("The state is 'completed' when all of the modified blocks have been transferred to Amazon S3.");
-    println!("Use the get-snapshot-state code example to get the state of the snapshot.");
-
-    Ok(())
+    finish_snapshot(&client, &id).await
 }
